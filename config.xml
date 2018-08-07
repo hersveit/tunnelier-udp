@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Settings>
+  <InputPort>8000</InputPort>
+  <RedirectIp>127.0.0.1</RedirectIp>
+  <RedirectPort>8080</RedirectPort>
+</Settings>
