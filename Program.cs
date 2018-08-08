@@ -6,31 +6,31 @@ using System.Threading;
 
 namespace Tunnelier {
   class Program {
-    protected static Thread tunnelThread;
     protected static UdpClient tunnelUdp;
     protected static Settings settings;
 
+    protected struct SClient {
+      public UdpClient udpClient;
+      public IPEndPoint endPoint;
+      public Thread thread;
+    }
+
     static void Main(string[] args) {
-      settings = new Settings();
+      string configFilePath = args.Length > 0 ? args[0] : "config.xml";
+      settings = new Settings(configFilePath);
 
       ThreadStart tunnelThreadStart = new ThreadStart(TunnelListener);
-      tunnelThread = new Thread(tunnelThreadStart);
+      Thread tunnelThread = new Thread(tunnelThreadStart);
       tunnelThread.Start();
 
       Logger.Info("Press Q to exit");
       while (true) {
-        var k = Console.ReadKey();
-        if (k.Key == ConsoleKey.Q) {
+        if (Console.ReadKey().Key == ConsoleKey.Q) {
           Environment.Exit(0);
         }
       }
     }
 
-    struct SClient {
-      public UdpClient udpClient;
-      public IPEndPoint endPoint;
-      public Thread thread;
-    }
     static SClient[] clients = new SClient[0];
     static void TunnelListener() {
       IPEndPoint tunnelIpEndPoint = new IPEndPoint(IPAddress.Any, settings.Collection.InputPort);
@@ -39,7 +39,6 @@ namespace Tunnelier {
         IPEndPoint gameEndPoint = new IPEndPoint(0, 0);
         byte[] result = tunnelUdp.Receive(ref gameEndPoint);
         string msg = Encoding.ASCII.GetString(result, 0, result.Length);
-        // Console.WriteLine("FROM GAME: get {0} bytes from {1}", result.Length, gameEndPoint);
         var udp = GetUdpClient(gameEndPoint, ref clients);
         udp.Send(result, result.Length);
       }
@@ -50,7 +49,6 @@ namespace Tunnelier {
         SClient client = (SClient)obj;
         IPEndPoint source = new IPEndPoint(0, 0);
         byte[] result = client.udpClient.Receive(ref source);
-        // Console.WriteLine("FROM SERVER: get {0} bytes from {1}", result.Length, source);
         tunnelUdp.Send(result, result.Length, client.endPoint);
       }
     }
