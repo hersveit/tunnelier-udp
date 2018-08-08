@@ -20,8 +20,8 @@ namespace Tunnelier {
     protected static RemoteClient[] remoteClients = new RemoteClient[0];
 
     static void Main(string[] args) {
-      string configFilePath = args.Length > 0 ? args[0] : "config.xml";
-      settings = new Settings(configFilePath);
+      CommanLineArguments arguments = new CommanLineArguments(args);
+      settings = new Settings(arguments.ConfigFilePath ?? "config.xml");
 
       ThreadStart tunnelThreadStart = new ThreadStart(TunnelListener);
       Thread tunnelThread = new Thread(tunnelThreadStart);
