@@ -13,21 +13,21 @@ namespace Tunnelier {
   }
 
   class Program {
-    protected delegate void ParameterizedDelegate(object obj);
+    private delegate void ParameterizedDelegate(object obj);
 
-    protected static UdpClient inputSocket;
-    protected static Settings settings;
-    protected static RemoteClient[] remoteClients = new RemoteClient[0];
+    private static UdpClient inputSocket;
+    private static Settings settings;
+    private static RemoteClient[] remoteClients = new RemoteClient[0];
 
     static void Main(string[] args) {
       CommanLineArguments arguments = new CommanLineArguments(args);
       settings = new Settings(arguments.ConfigFilePath ?? "config.xml");
 
-      ThreadStart tunnelThreadStart = new ThreadStart(TunnelListener);
-      Thread tunnelThread = new Thread(tunnelThreadStart);
-      tunnelThread.Start();
+      ThreadStart InputSocketListenerStart = new ThreadStart(InputSocketListener);
+      Thread thread = new Thread(InputSocketListenerStart);
+      thread.Start();
 
-      Logger.Info("Press Q to exit");
+      Logger.Info("Press 'Q' to exit");
       while (true) {
         if (Console.ReadKey().Key == ConsoleKey.Q) {
           Environment.Exit(0);
@@ -35,19 +35,19 @@ namespace Tunnelier {
       }
     }
 
-    private static void TunnelListener() {
+    private static void InputSocketListener() {
       IPEndPoint tunnelIpEndPoint = new IPEndPoint(IPAddress.Any, settings.Collection.InputPort);
       inputSocket = new UdpClient(tunnelIpEndPoint);
 
       while (true) {
         IPEndPoint gameEndPoint = new IPEndPoint(0, 0);
         byte[] result = inputSocket.Receive(ref gameEndPoint);
-        RemoteClient remoteClient = remoteClients.Find(gameEndPoint) ?? ApplyRemoteClient(gameEndPoint, udpServerThread, ref remoteClients);
+        RemoteClient remoteClient = remoteClients.Find(gameEndPoint) ?? ApplyRemoteClient(gameEndPoint, redirectSocketListener, ref remoteClients);
         remoteClient.redirectSocket.Send(result, result.Length);
       }
     }
 
-    private static void udpServerThread(object obj) {
+    private static void redirectSocketListener(object obj) {
       while (true) {
         RemoteClient remoteClient = (RemoteClient)obj;
         IPEndPoint source = new IPEndPoint(0, 0);
@@ -61,8 +61,8 @@ namespace Tunnelier {
       UdpClient redirectSocket = new UdpClient();
       redirectSocket.Connect(redirectEndPoint);
 
-      ParameterizedThreadStart udpServerThreadStart = new ParameterizedThreadStart(callback);
-      var thread = new Thread(udpServerThreadStart);
+      ParameterizedThreadStart redirectSocketListenerStart = new ParameterizedThreadStart(callback);
+      var thread = new Thread(redirectSocketListenerStart);
 
       RemoteClient remoteClient = new RemoteClient() { redirectSocket = redirectSocket, thread = thread, endPoint = endPoint };
       thread.Start(remoteClient);
