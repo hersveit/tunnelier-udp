@@ -5,71 +5,69 @@ using System.Text;
 using System.Threading;
 
 namespace Tunnelier {
+
+  public struct RemoteClient {
+    public UdpClient redirectSocket;
+    public IPEndPoint endPoint;
+    public Thread thread;
+  }
+
   class Program {
-    protected static Thread tunnelThread;
-    protected static UdpClient tunnelUdp;
-    protected static Settings settings;
+    private delegate void ParameterizedDelegate(object obj);
+
+    private static UdpClient inputSocket;
+    private static Settings settings;
+    private static RemoteClient[] remoteClients = new RemoteClient[0];
 
     static void Main(string[] args) {
-      settings = new Settings();
+      CommanLineArguments arguments = new CommanLineArguments(args);
+      settings = new Settings(arguments.ConfigFilePath ?? "config.xml");
 
-      ThreadStart tunnelThreadStart = new ThreadStart(TunnelListener);
-      tunnelThread = new Thread(tunnelThreadStart);
-      tunnelThread.Start();
+      ThreadStart InputSocketListenerStart = new ThreadStart(InputSocketListener);
+      Thread thread = new Thread(InputSocketListenerStart);
+      thread.Start();
 
-      Logger.Info("Press Q to exit");
+      Logger.Info("Press 'Q' to exit");
       while (true) {
-        var k = Console.ReadKey();
-        if (k.Key == ConsoleKey.Q) {
+        if (Console.ReadKey().Key == ConsoleKey.Q) {
           Environment.Exit(0);
         }
       }
     }
 
-    struct SClient {
-      public UdpClient udpClient;
-      public IPEndPoint endPoint;
-      public Thread thread;
-    }
-    static SClient[] clients = new SClient[0];
-    static void TunnelListener() {
+    private static void InputSocketListener() {
       IPEndPoint tunnelIpEndPoint = new IPEndPoint(IPAddress.Any, settings.Collection.InputPort);
-      tunnelUdp = new UdpClient(tunnelIpEndPoint);
+      inputSocket = new UdpClient(tunnelIpEndPoint);
+
       while (true) {
         IPEndPoint gameEndPoint = new IPEndPoint(0, 0);
-        byte[] result = tunnelUdp.Receive(ref gameEndPoint);
-        string msg = Encoding.ASCII.GetString(result, 0, result.Length);
-        // Console.WriteLine("FROM GAME: get {0} bytes from {1}", result.Length, gameEndPoint);
-        var udp = GetUdpClient(gameEndPoint, ref clients);
-        udp.Send(result, result.Length);
+        byte[] result = inputSocket.Receive(ref gameEndPoint);
+        RemoteClient remoteClient = remoteClients.Find(gameEndPoint) ?? ApplyRemoteClient(gameEndPoint, redirectSocketListener, ref remoteClients);
+        remoteClient.redirectSocket.Send(result, result.Length);
       }
     }
 
-    static void udpServerThread(object obj) {
+    private static void redirectSocketListener(object obj) {
       while (true) {
-        SClient client = (SClient)obj;
+        RemoteClient remoteClient = (RemoteClient)obj;
         IPEndPoint source = new IPEndPoint(0, 0);
-        byte[] result = client.udpClient.Receive(ref source);
-        // Console.WriteLine("FROM SERVER: get {0} bytes from {1}", result.Length, source);
-        tunnelUdp.Send(result, result.Length, client.endPoint);
+        byte[] result = remoteClient.redirectSocket.Receive(ref source);
+        inputSocket.Send(result, result.Length, remoteClient.endPoint);
       }
     }
 
-    static UdpClient GetUdpClient(IPEndPoint endPoint, ref SClient[] clients) {
-      for (int i = 0; i < clients.Length; i += 1) {
-        if (clients[i].endPoint.Equals(endPoint)) {
-          return clients[i].udpClient;
-        }
-      }
-      IPEndPoint newIpServerPoint = new IPEndPoint(IPAddress.Parse(settings.Collection.RedirectIp), settings.Collection.RedirectPort);
-      UdpClient udp = new UdpClient();
-      udp.Connect(newIpServerPoint);
-      ParameterizedThreadStart udpServerThreadStart = new ParameterizedThreadStart(udpServerThread);
-      var thread = new Thread(udpServerThreadStart);
-      SClient sc = new SClient() { endPoint = endPoint, udpClient = udp, thread = thread };
-      clients = clients.Concat(new SClient[] { sc });
-      thread.Start(sc);
-      return udp;
+    private static RemoteClient ApplyRemoteClient(IPEndPoint endPoint, ParameterizedDelegate callback, ref RemoteClient[] remoteClients) {
+      IPEndPoint redirectEndPoint = new IPEndPoint(IPAddress.Parse(settings.Collection.RedirectIp), settings.Collection.RedirectPort);
+      UdpClient redirectSocket = new UdpClient();
+      redirectSocket.Connect(redirectEndPoint);
+
+      ParameterizedThreadStart redirectSocketListenerStart = new ParameterizedThreadStart(callback);
+      var thread = new Thread(redirectSocketListenerStart);
+
+      RemoteClient remoteClient = new RemoteClient() { redirectSocket = redirectSocket, thread = thread, endPoint = endPoint };
+      thread.Start(remoteClient);
+      remoteClients = remoteClients.Concat(new RemoteClient[] { remoteClient });
+      return remoteClient;
     }
   }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 
 namespace Tunnelier {
@@ -19,10 +20,21 @@ namespace Tunnelier {
       string paragraphSeparator = ((char)0x2029).ToString();
 
       return value.Replace("\r\n", string.Empty)
-                  .Replace("\n", string.Empty)
-                  .Replace("\r", string.Empty)
-                  .Replace(lineSeparator, string.Empty)
-                  .Replace(paragraphSeparator, string.Empty);
+        .Replace("\n", string.Empty)
+        .Replace("\r", string.Empty)
+        .Replace(lineSeparator, string.Empty)
+        .Replace(paragraphSeparator, string.Empty);
+    }
+  }
+
+  public static class RemoteClientExtensions {
+    public static RemoteClient? Find(this RemoteClient[] remoteClients, IPEndPoint endPoint) {
+      for (int i = 0; i < remoteClients.Length; i += 1) {
+        if (remoteClients[i].endPoint.Equals(endPoint)) {
+          return remoteClients[i];
+        }
+      }
+      return null;
     }
   }
 }
