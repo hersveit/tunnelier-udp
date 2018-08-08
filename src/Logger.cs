@@ -17,7 +17,7 @@ namespace Tunnelier {
 
     public static void Error(int code, string msg) {
       Console.ForegroundColor = ConsoleColor.Red;
-      Console.WriteLine(string.Format("{0}: {1}", code, msg));
+      Console.WriteLine($"{code}: {msg}");
       Console.ResetColor();
     }
   }
