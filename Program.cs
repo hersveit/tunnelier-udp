@@ -38,6 +38,7 @@ namespace Tunnelier {
     private static void TunnelListener() {
       IPEndPoint tunnelIpEndPoint = new IPEndPoint(IPAddress.Any, settings.Collection.InputPort);
       inputSocket = new UdpClient(tunnelIpEndPoint);
+
       while (true) {
         IPEndPoint gameEndPoint = new IPEndPoint(0, 0);
         byte[] result = inputSocket.Receive(ref gameEndPoint);
@@ -59,8 +60,10 @@ namespace Tunnelier {
       IPEndPoint redirectEndPoint = new IPEndPoint(IPAddress.Parse(settings.Collection.RedirectIp), settings.Collection.RedirectPort);
       UdpClient redirectSocket = new UdpClient();
       redirectSocket.Connect(redirectEndPoint);
+
       ParameterizedThreadStart udpServerThreadStart = new ParameterizedThreadStart(callback);
       var thread = new Thread(udpServerThreadStart);
+
       RemoteClient remoteClient = new RemoteClient() { redirectSocket = redirectSocket, thread = thread, endPoint = endPoint };
       thread.Start(remoteClient);
       remoteClients = remoteClients.Concat(new RemoteClient[] { remoteClient });
