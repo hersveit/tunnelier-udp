@@ -20,5 +20,11 @@ namespace Tunnelier {
       Console.WriteLine($"{code}: {msg}");
       Console.ResetColor();
     }
+
+    public static void Warning(string msg) {
+      Console.ForegroundColor = ConsoleColor.DarkYellow;
+      Console.WriteLine(msg);
+      Console.ResetColor();
+    }
   }
 }

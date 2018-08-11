@@ -18,10 +18,12 @@ namespace Tunnelier {
     private static UdpClient inputSocket;
     private static Settings settings;
     private static RemoteClient[] remoteClients = new RemoteClient[0];
+    private static bool isLogging = false;
 
     static void Main(string[] args) {
       CommanLineArguments arguments = new CommanLineArguments(args);
       settings = new Settings(arguments.ConfigFilePath ?? "config.xml");
+      isLogging =  arguments.IsLogging;
 
       ThreadStart InputSocketListenerStart = new ThreadStart(InputSocketListener);
       Thread thread = new Thread(InputSocketListenerStart);
@@ -42,9 +44,11 @@ namespace Tunnelier {
       while (true) {
         IPEndPoint inputEndPoint = new IPEndPoint(0, 0);
         byte[] result = inputSocket.Receive(ref inputEndPoint);
+        string inputIp = inputEndPoint.Address.ToString();
         if (Array.Exists(settings.Collection.BlackList,
-          ip => ip == inputEndPoint.Address.ToString())
+          ip => ip == inputIp)
         ) {
+          if (isLogging) Logger.Warning($"Ip {inputIp} in the black list");
           continue;
         }
         RemoteClient remoteClient = remoteClients.Find(inputEndPoint) ?? ApplyRemoteClient(inputEndPoint, redirectSocketListener, ref remoteClients);
@@ -53,9 +57,10 @@ namespace Tunnelier {
     }
 
     private static void redirectSocketListener(object obj) {
+      RemoteClient remoteClient = (RemoteClient)obj;
+      IPEndPoint source = new IPEndPoint(0, 0);
+
       while (true) {
-        RemoteClient remoteClient = (RemoteClient)obj;
-        IPEndPoint source = new IPEndPoint(0, 0);
         byte[] result = remoteClient.redirectSocket.Receive(ref source);
         inputSocket.Send(result, result.Length, remoteClient.endPoint);
       }
