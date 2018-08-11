@@ -40,9 +40,14 @@ namespace Tunnelier {
       inputSocket = new UdpClient(tunnelIpEndPoint);
 
       while (true) {
-        IPEndPoint gameEndPoint = new IPEndPoint(0, 0);
-        byte[] result = inputSocket.Receive(ref gameEndPoint);
-        RemoteClient remoteClient = remoteClients.Find(gameEndPoint) ?? ApplyRemoteClient(gameEndPoint, redirectSocketListener, ref remoteClients);
+        IPEndPoint inputEndPoint = new IPEndPoint(0, 0);
+        byte[] result = inputSocket.Receive(ref inputEndPoint);
+        if (Array.Exists(settings.Collection.BlackList,
+          ip => ip == inputEndPoint.Address.ToString())
+        ) {
+          continue;
+        }
+        RemoteClient remoteClient = remoteClients.Find(inputEndPoint) ?? ApplyRemoteClient(inputEndPoint, redirectSocketListener, ref remoteClients);
         remoteClient.redirectSocket.Send(result, result.Length);
       }
     }

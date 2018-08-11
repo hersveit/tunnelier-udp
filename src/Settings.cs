@@ -25,15 +25,19 @@ namespace Tunnelier {
   }
 
   [Serializable()]
-  [System.Xml.Serialization.XmlRoot("Settings")]
+  [XmlRoot("Settings")]
   public class SettingsCollection {
-    [System.Xml.Serialization.XmlElement("InputPort")]
+    [XmlElement("InputPort")]
     public int InputPort { get; set; }
 
-    [System.Xml.Serialization.XmlElement("RedirectPort")]
+    [XmlElement("RedirectPort")]
     public int RedirectPort { get; set; }
 
-    [System.Xml.Serialization.XmlElement("RedirectIp")]
+    [XmlElement("RedirectIp")]
     public string RedirectIp { get; set; }
+
+    [XmlArray("BlackList")]
+    [XmlArrayItem("IP")]
+    public string[] BlackList { get; set; }
   }
 }
