@@ -1,2 +1,2 @@
 # tunnelier
-proxy tunnel
+udp proxy tunnel
