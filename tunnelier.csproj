@@ -5,4 +5,10 @@
     <RootNamespace>tunnelier</RootNamespace>
     <RuntimeIdentifiers>osx-x64</RuntimeIdentifiers>
   </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="src\Services\" />
+    <Folder Include="src\Services\Logger\" />
+    <Folder Include="src\Shared\" />
+    <Folder Include="src\Shared\Threader\" />
+  </ItemGroup>
 </Project>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Settings>
+<Config>
   <InputPort>8000</InputPort>
   <RedirectIp>127.0.0.1</RedirectIp>
   <RedirectPort>8080</RedirectPort>
   <BlackList>
     <IP>0.0.0.0</IP>
   </BlackList>
-</Settings>
+</Config>
